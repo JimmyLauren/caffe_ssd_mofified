@@ -21,20 +21,14 @@ namespace caffe {
 template <typename Dtype>
 class DetectionEvaluateLayer : public Layer<Dtype> {
  public:
-<<<<<<< HEAD
+
 	 //added by Jimmy
-	 bool label_project = false; // ÊÇ·ñÒª½øĞĞ±êÇ©Ó³Éä
-	 //string label_project_file; //±êÇ©Ó³ÉäÎÄ¼şµÄµØÖ·
-	 vector<pair<int, int> > Old2NewLabel_; //´æ·ÅĞÂ¾É±êÇ©µÄvectorÈİÆ÷
+	 bool label_project = false; // æ˜¯å¦è¦è¿›è¡Œæ ‡ç­¾æ˜ å°„
+	 //string label_project_file; //æ ‡ç­¾æ˜ å°„æ–‡ä»¶çš„åœ°å€
+	 vector<pair<int, int> > Old2NewLabel_; //å­˜æ”¾æ–°æ—§æ ‡ç­¾çš„vectorå®¹å™¨
 	 //added by Jimmy
 	 int Label_Project(int & label);
-=======
 
-
-  //added by Jimmy
-  int Label_Project(int & label);
-
->>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
 
   explicit DetectionEvaluateLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
@@ -73,27 +67,18 @@ class DetectionEvaluateLayer : public Layer<Dtype> {
   int background_label_id_;
   float overlap_threshold_;
   bool evaluate_difficult_gt_;
-<<<<<<< HEAD
 
-
-
-
-=======
->>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
   vector<pair<int, int> > sizes_;
   int count_;
   bool use_normalized_bbox_;
 
   bool has_resize_;
   ResizeParameter resize_param_;
-<<<<<<< HEAD
-=======
 
-  //added by Jimmy
-  bool label_project=false;
-  vector<pair<int, int> > Old2NewLabel_;
 
->>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
+
+
+
 };
 
 }  // namespace caffe
