@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
 # SSD: Single Shot MultiBox Detector
 
 [![Build Status](https://travis-ci.org/weiliu89/caffe.svg?branch=ssd)](https://travis-ci.org/weiliu89/caffe)
@@ -141,3 +145,10 @@ We have provided the latest models that are trained from different datasets. To 
    * trainval1: [SSD300*](https://drive.google.com/open?id=0BzKzrI_SkD1_a2NKQ2d1d043VXM), [SSD500](https://drive.google.com/open?id=0BzKzrI_SkD1_X2ZCLVgwLTgzaTQ)
 
 <sup>[1]</sup>We use [`examples/convert_model.ipynb`](https://github.com/weiliu89/caffe/blob/ssd/examples/convert_model.ipynb) to extract a VOC model from a pretrained COCO model.
+<<<<<<< HEAD
+=======
+=======
+# caffe_ssd_modified
+caffe for ssd. mofified by changing solver.cpp, detection_evaluate_layer.hpp and it's cpp files. Added functions: 1 adding the function to calculate tp,fp,fn and recalls&amp;precisions for each label. 2 add the function to preduce label projection which is used in projecting old labels to new labels.
+>>>>>>> e610567f2fa38a100b350f6a966457a0daf94cf9
+>>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98

@@ -21,12 +21,20 @@ namespace caffe {
 template <typename Dtype>
 class DetectionEvaluateLayer : public Layer<Dtype> {
  public:
+<<<<<<< HEAD
 	 //added by Jimmy
 	 bool label_project = false; // 是否要进行标签映射
 	 //string label_project_file; //标签映射文件的地址
 	 vector<pair<int, int> > Old2NewLabel_; //存放新旧标签的vector容器
 	 //added by Jimmy
 	 int Label_Project(int & label);
+=======
+
+
+  //added by Jimmy
+  int Label_Project(int & label);
+
+>>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
 
   explicit DetectionEvaluateLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
@@ -65,16 +73,27 @@ class DetectionEvaluateLayer : public Layer<Dtype> {
   int background_label_id_;
   float overlap_threshold_;
   bool evaluate_difficult_gt_;
+<<<<<<< HEAD
 
 
 
 
+=======
+>>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
   vector<pair<int, int> > sizes_;
   int count_;
   bool use_normalized_bbox_;
 
   bool has_resize_;
   ResizeParameter resize_param_;
+<<<<<<< HEAD
+=======
+
+  //added by Jimmy
+  bool label_project=false;
+  vector<pair<int, int> > Old2NewLabel_;
+
+>>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
 };
 
 }  // namespace caffe

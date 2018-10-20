@@ -17,6 +17,7 @@ void DetectionEvaluateLayer<Dtype>::LayerSetUp(
       << "Must provide num_classes.";
   num_classes_ = detection_evaluate_param.num_classes();
 
+<<<<<<< HEAD
 
   //*******************************************************
   // added by Jimmy
@@ -42,6 +43,31 @@ void DetectionEvaluateLayer<Dtype>::LayerSetUp(
   }
   //*********************************************************
 
+=======
+  //added by Jimmy
+  //*******************************************************
+  // added by Jimmy
+  label_project = detection_evaluate_param.label_project();
+  if (detection_evaluate_param.has_label_project_file()) {
+	  //if there exists a label project file in model.prototxt
+	  string label_project_file = detection_evaluate_param.label_project_file();
+	  std::ifstream labelProjectInfile(label_project_file.c_str());
+	  CHECK(labelProjectInfile.good())
+		  << "Failed to open label project file: " << label_project_file;
+	  // The file is in the following format:
+	  //     old_label  new_label
+	  //     ......
+	  int old_label, new_label;
+	  while (labelProjectInfile >> old_label >> new_label) {
+		  Old2NewLabel_.push_back(std::make_pair(old_label, new_label));
+		  std::cout << old_label << ' ' << new_label << std::endl;
+	  }
+	  labelProjectInfile.close();
+  }
+  //*********************************************************
+
+
+>>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
   background_label_id_ = detection_evaluate_param.background_label_id();
   overlap_threshold_ = detection_evaluate_param.overlap_threshold();
   CHECK_GT(overlap_threshold_, 0.) << "overlap_threshold must be non negative.";
@@ -102,6 +128,7 @@ void DetectionEvaluateLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   top[0]->Reshape(top_shape);
 }
 
+<<<<<<< HEAD
 //д\B8\F6\BA\AF\CA\FD\BD\AB\BA\AF\CA\FD\BD\F8\D0\D0\D7\F8\B1\EA\B5\C4ӳ\C9\E4
 /*
 bool label_project; // \CAǷ\F1Ҫ\BD\F8\D0б\EAǩӳ\C9\E4
@@ -113,6 +140,19 @@ int DetectionEvaluateLayer<Dtype>::Label_Project(int & label){
 	if (label_project) {  //\CA\D7\CF\C8\C5ж\CF\CAǷ\F1Ҫ\BD\F8\D0б\EAǩӳ\C9\E4
 		//\C8\F4Ϊ\D5\E6\D4ٽ\F8\D0б\EAǩӳ\C9\E4
 		//std::vector<std::pair<int, int>>::iterator it = find(Old2NewLabel_.begin(), Old2NewLabel_.end(), label); //\D5ҵ\BD\C1\CBlabel\B1\EAǩ\CB\F9\D4\DAλ\D6õı\E0\BA\C5
+=======
+
+
+
+
+//
+
+template <typename Dtype>
+int DetectionEvaluateLayer<Dtype>::Label_Project(int & label){
+	if (label_project) {  //
+		//
+		//std::vector<std::pair<int, int>>::iterator it = find(Old2NewLabel_.begin(), Old2NewLabel_.end(), label); //
+>>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
 		std::vector<std::pair<int, int> >::iterator it = Old2NewLabel_.begin();
 		for (;it != Old2NewLabel_.end();it++) {
 			int tempOldLabel = it->first; //old label
@@ -120,6 +160,7 @@ int DetectionEvaluateLayer<Dtype>::Label_Project(int & label){
 				break;
 			}
 		}
+<<<<<<< HEAD
 		if (it == Old2NewLabel_.end()) { //labelû\D3\D0\D4\DAlabel_project_file\D6\D0\D4\F2\C5׳\F6\D2쳣
 			std::cout << "There is no " << label << " in label_project_file!!" << std::endl;
 			throw - 1;
@@ -129,11 +170,25 @@ int DetectionEvaluateLayer<Dtype>::Label_Project(int & label){
 	else
 		return label;
 }
+=======
+		if (it == Old2NewLabel_.end()) { //
+			std::cout << "There is no " << label << " in label_project_file!!" << std::endl;
+			throw - 1;
+		}
+		return (int)it->second;//
+	}
+	else
+		return label;
+ }
+
+
+>>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
 
 
 template <typename Dtype>
 void DetectionEvaluateLayer<Dtype>::Forward_cpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
+<<<<<<< HEAD
   const Dtype* det_data = bottom[0]->cpu_data(); //detection data;
   const Dtype* gt_data = bottom[1]->cpu_data(); //ground truth data; 
 
@@ -370,6 +425,180 @@ void DetectionEvaluateLayer<Dtype>::Forward_cpu(
 			}
 		}
 	}
+=======
+  const Dtype* det_data = bottom[0]->cpu_data();
+  const Dtype* gt_data = bottom[1]->cpu_data();
+
+  // Retrieve all detection results.
+  map<int, LabelBBox> all_detections;
+  GetDetectionResults(det_data, bottom[0]->height(), background_label_id_,
+                      &all_detections);
+
+  // Retrieve all ground truth (including difficult ones).
+  map<int, LabelBBox> all_gt_bboxes;
+  GetGroundTruth(gt_data, bottom[1]->height(), background_label_id_,
+                 true, &all_gt_bboxes);
+
+  Dtype* top_data = top[0]->mutable_cpu_data();
+  caffe_set(top[0]->count(), Dtype(0.), top_data);
+  int num_det = 0;
+
+  // Insert number of ground truth for each label.
+  map<int, int> num_pos;
+  for (map<int, LabelBBox>::iterator it = all_gt_bboxes.begin();
+       it != all_gt_bboxes.end(); ++it) {
+    for (LabelBBox::iterator iit = it->second.begin(); iit != it->second.end();
+         ++iit) {
+      int count = 0;
+      if (evaluate_difficult_gt_) {
+        count = iit->second.size();
+      } else {
+        // Get number of non difficult ground truth.
+        for (int i = 0; i < iit->second.size(); ++i) {
+          if (!iit->second[i].difficult()) {
+            ++count;
+          }
+        }
+      }
+      if (num_pos.find(iit->first) == num_pos.end()) {
+        num_pos[iit->first] = count;
+      } else {
+        num_pos[iit->first] += count;
+      }
+    }
+  }
+  for (int c = 0; c < num_classes_; ++c) {
+    if (c == background_label_id_) {
+      continue;
+    }
+    top_data[num_det * 5] = -1;
+    top_data[num_det * 5 + 1] = c;
+    if (num_pos.find(c) == num_pos.end()) {
+      top_data[num_det * 5 + 2] = 0;
+    } else {
+      top_data[num_det * 5 + 2] = num_pos.find(c)->second;
+    }
+    top_data[num_det * 5 + 3] = -1;
+    top_data[num_det * 5 + 4] = -1;
+    ++num_det;
+  }
+
+  // Insert detection evaluate status.
+  for (map<int, LabelBBox>::iterator it = all_detections.begin();
+       it != all_detections.end(); ++it) {
+    int image_id = it->first;
+    LabelBBox& detections = it->second;
+    if (all_gt_bboxes.find(image_id) == all_gt_bboxes.end()) {
+      // No ground truth for current image. All detections become false_pos.
+      for (LabelBBox::iterator iit = detections.begin();
+           iit != detections.end(); ++iit) {
+        int label = iit->first;
+        if (label == -1) {
+          continue;
+        }
+        const vector<NormalizedBBox>& bboxes = iit->second;
+        for (int i = 0; i < bboxes.size(); ++i) {
+          top_data[num_det * 5] = image_id;
+          //top_data[num_det * 5 + 1] = label;
+          top_data[num_det * 5 + 1] = Label_Project(label);
+	  //std::cout << "old label: " << label << "; new label: " << Label_Project(label) << std::endl;
+
+          top_data[num_det * 5 + 2] = bboxes[i].score();
+          top_data[num_det * 5 + 3] = 0;
+          top_data[num_det * 5 + 4] = 1;
+          ++num_det;
+        }
+      }
+    } else {
+      LabelBBox& label_bboxes = all_gt_bboxes.find(image_id)->second;
+      for (LabelBBox::iterator iit = detections.begin();
+           iit != detections.end(); ++iit) {
+        int label = iit->first;
+        if (label == -1) {
+          continue;
+        }
+        vector<NormalizedBBox>& bboxes = iit->second;
+        if (label_bboxes.find(label) == label_bboxes.end()) {
+          // No ground truth for current label. All detections become false_pos.
+          for (int i = 0; i < bboxes.size(); ++i) {
+            top_data[num_det * 5] = image_id;
+            //top_data[num_det * 5 + 1] = label;
+	    top_data[num_det * 5 + 1] = Label_Project(label);
+	    //std::cout << "old label: " << label << "; new label: " << Label_Project(label) << std::endl;
+
+            top_data[num_det * 5 + 2] = bboxes[i].score();
+            top_data[num_det * 5 + 3] = 0;
+            top_data[num_det * 5 + 4] = 1;
+            ++num_det;
+          }
+        } else {
+          vector<NormalizedBBox>& gt_bboxes = label_bboxes.find(label)->second;
+          // Scale ground truth if needed.
+          if (!use_normalized_bbox_) {
+            CHECK_LT(count_, sizes_.size());
+            for (int i = 0; i < gt_bboxes.size(); ++i) {
+              OutputBBox(gt_bboxes[i], sizes_[count_], has_resize_,
+                         resize_param_, &(gt_bboxes[i]));
+            }
+          }
+          vector<bool> visited(gt_bboxes.size(), false);
+          // Sort detections in descend order based on scores.
+          std::sort(bboxes.begin(), bboxes.end(), SortBBoxDescend);
+          for (int i = 0; i < bboxes.size(); ++i) {
+            top_data[num_det * 5] = image_id;
+            //top_data[num_det * 5 + 1] = label;
+	    top_data[num_det * 5 + 1] = Label_Project(label);
+	    //std::cout << "old label: " << label << "; new label: " << Label_Project(label) << std::endl;
+
+            top_data[num_det * 5 + 2] = bboxes[i].score();
+            if (!use_normalized_bbox_) {
+              OutputBBox(bboxes[i], sizes_[count_], has_resize_,
+                         resize_param_, &(bboxes[i]));
+            }
+            // Compare with each ground truth bbox.
+            float overlap_max = -1;
+            int jmax = -1;
+            for (int j = 0; j < gt_bboxes.size(); ++j) {
+              float overlap = JaccardOverlap(bboxes[i], gt_bboxes[j],
+                                             use_normalized_bbox_);
+              if (overlap > overlap_max) {
+                overlap_max = overlap;
+                jmax = j;
+              }
+            }
+            if (overlap_max >= overlap_threshold_) {
+              if (evaluate_difficult_gt_ ||
+                  (!evaluate_difficult_gt_ && !gt_bboxes[jmax].difficult())) {
+                if (!visited[jmax]) {
+                  // true positive.
+                  top_data[num_det * 5 + 3] = 1;
+                  top_data[num_det * 5 + 4] = 0;
+                  visited[jmax] = true;
+                } else {
+                  // false positive (multiple detection).
+                  top_data[num_det * 5 + 3] = 0;
+                  top_data[num_det * 5 + 4] = 1;
+                }
+              }
+            } else {
+              // false positive.
+              top_data[num_det * 5 + 3] = 0;
+              top_data[num_det * 5 + 4] = 1;
+            }
+            ++num_det;
+          }
+        }
+      }
+    }
+    if (sizes_.size() > 0) {
+      ++count_;
+      if (count_ == sizes_.size()) {
+        // reset count after a full iterations through the DB.
+        count_ = 0;
+      }
+    }
+  }
+>>>>>>> c1b9b8a669d0d1cdf51a2b0202a89514584edd98
 }
 
 INSTANTIATE_CLASS(DetectionEvaluateLayer);
