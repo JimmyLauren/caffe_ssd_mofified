@@ -33,11 +33,11 @@ typedef std::pair<string, float> Prediction;  //记录每一个类的名称以�
 输入：文件名、跟目录地址(根目录后不加斜杠)
 输出：所有图片的绝对路径与其对应标签组成的对的容器
 */
-vector<pair<string, int>> ReturnImagePathAndLabel(const string &img_file, const string & root_path) {
-	vector<pair<string, int>> Imgpath_Label;
+vector<pair<string, int> > ReturnImagePathAndLabel(const string &img_file, const string & root_path) {
+	vector<pair<string, int> > Imgpath_Label;
 
 	std::ifstream infile;
-	infile.open(img_file, ios::in);
+	infile.open(img_file.c_str(), ios::in);
 	if (!infile) { //读取不到文件则退出
 		std::cout << "读取文件出错" << std::endl;
 		system("exit");
@@ -281,7 +281,7 @@ void Classifier::Preprocess(const cv::Mat& img,
 		<< "Input channels are not wrapping the input layer of the network.";//核验图像是否被送入了网络作为输入
 }
 
-main(int argc, char** argv) {
+int main(int argc, char** argv) {
 	int amount = 0, err_count = 0;
 	if (argc != 7) {
 		/*核验命令行参数是否为6，这6个参数分别为
@@ -328,8 +328,8 @@ main(int argc, char** argv) {
 	std::ofstream outfile; //创建记录错误分类文件，存入错误分类的图片、预测标签、真实标签。
 	outfile.open("wrong_file_recoder.txt", ios::binary | ios::app | ios::in | ios::out);
 
-	vector<pair<string, int>> image_label = ReturnImagePathAndLabel(file_txt, root_path);
-	for (vector<pair<string, int>>::iterator it = image_label.begin(); it != image_label.end(); it++) {
+	vector<pair<string, int> > image_label = ReturnImagePathAndLabel(file_txt, root_path);
+	for (vector<pair<string, int> >::iterator it = image_label.begin(); it != image_label.end(); it++) {
 		amount += 1;
 		pair<string, int> image_label_retrive = *it;
 		std::cout << image_label_retrive.first << " ---- " << image_label_retrive.second << std::endl;
