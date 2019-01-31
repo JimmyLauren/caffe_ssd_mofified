@@ -14,6 +14,7 @@
 #include "caffe/layers/normalize_layer.hpp"
 #include "caffe/layers/deconv_layer.hpp"
 #include "caffe/layers/depthwise_conv_layer.hpp"
+#include "caffe/layers/inner_product_layer.hpp"
 
 #include "caffe/layers/bias_layer.hpp"
 #include "caffe/layers/concat_layer.hpp"
@@ -304,6 +305,14 @@ shared_ptr<Layer<Dtype> > GetConvolutionLayer(const LayerParameter& param) {
 
 REGISTER_LAYER_CREATOR(Convolution, GetConvolutionLayer);
 
+//adding by JimmyLau in 29/01/2019
+// Get inner_product layer according to engine.
+template <typename Dtype>
+shared_ptr<Layer<Dtype> > GetInnerProductLayer(
+	const LayerParameter& param) {
+	return shared_ptr<Layer<Dtype> >(new InnerProductLayer<Dtype>(param));
+}
+REGISTER_LAYER_CREATOR(InnerProduct, GetInnerProductLayer);
 
 //Jimmy
 //Get depthwise convolution layer according to engine 
