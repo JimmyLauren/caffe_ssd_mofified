@@ -24,6 +24,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <io.h>
 #include <utility>
 #include <vector>
 
@@ -238,6 +239,41 @@ void Detector::Preprocess(const cv::Mat& img,
     << "Input channels are not wrapping the input layer of the network.";
 }
 
+//得到图片文件夹下所有图片的名字以及全路径
+void getImgFiles(std::string path, std::vector<std::string>& files)
+{
+	//文件句柄  
+	intptr_t   hFile = 0;
+	//文件信息  
+	struct _finddata_t fileinfo;
+	std::string p;
+	if ((hFile = _findfirst(p.assign(path).append("/*.jpg").c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+			if ((fileinfo.attrib &  _A_SUBDIR))  //如果是目录,迭代之
+			{
+				bool a = strcmp(fileinfo.name, ".") != 0;  //strcmp比较两个字符串，相同为1，不同为0
+				bool b = strcmp(fileinfo.name, "..") != 0;
+				if (a&&b)
+					getImgFiles(p.assign(path).append("/").append(fileinfo.name), files);
+			}
+			else  //如果不是,加入列表  
+			{
+				std::string fname(fileinfo.name);
+				std::string imgType = fname.substr(fname.rfind("."), fname.length());
+				if (imgType == ".jpg" || imgType == ".jpeg" || imgType == ".JPG" || imgType == ".JPEG" || imgType == ".bmp" || imgType == ".BMP" || imgType == ".png" || imgType == ".PNG")
+				{
+					files.push_back(p.assign(path).append("/").append(fileinfo.name));  //原来的只有这句即可
+				}
+
+			}
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+	}
+}
+
+
 DEFINE_string(mean_file, "",
     "The mean file used to subtract from the input image.");
 DEFINE_string(mean_value, "104,117,123",
@@ -255,14 +291,24 @@ DEFINE_double(confidence_threshold, 0.01,
 
 
 /*
-     Usage: 0 ssd_detect.exe file;
-			1 deploy.prototxt file;
-			2 caffemodel file;
-			3 test.txt, the first part of each line is relative path of image, the second is it's xml file's path;
-			4 root folder, combine with line in test.txt to form full dir of images, do not end with '/';
-			5 confidence threshold.
-			6 resize_width to show
-			7 resize_height to show
+   //  Usage: 0 ssd_detect.exe file;
+			//1 deploy.prototxt file;
+			//2 caffemodel file;
+			//3 test.txt, the first part of each line is relative path of image, the second is it's xml file's path;
+			//4 root folder, combine with line in test.txt to form full dir of images, do not end with '/';
+			//5 confidence threshold.
+			//6 resize_width to show
+			//7 resize_height to show
+
+	 Usage: 0 ssd_detect.exe file;
+			1 use test.txt or just image files,0 for image files and 1 for text.txt file
+			2 deploy.prototxt file;
+			3 caffemodel file;
+			4 test.txt, the first part of each line is relative path of image, the second is it's xml file's path;
+			5 root folder, combine with line in test.txt to form full dir of images, do not end with '/';
+			6 confidence threshold.
+			7 resize_width to show
+			8 resize_height to show
 */
 int main(int argc, char** argv) {
   ::google::InitGoogleLogging(argv[0]);
@@ -274,34 +320,36 @@ int main(int argc, char** argv) {
 #endif
 
   gflags::SetUsageMessage("Usage: 0 ssd_detect.exe file;\n"
-	  "			1 deploy.prototxt file;\n"
-	  "			2 caffemodel file;\n"
-	  "			3 test.txt, the first part of each line is relative path of image, the second is it's xml file's path;\n"
-	  "			4 root folder, combine with line in test.txt to form full dir of images, do not end with '/';\n"
-	  "			5 confidence threshold;\n"
-	  "			6 resize_width to show;\n"
-	  "         7 resize_height to show.\n");
+	  "			1 use test.txt or just image files, 0 for image files and 1 for text.txt file"
+	  "			2 deploy.prototxt file;\n"
+	  "			3 caffemodel file;\n"
+	  "			4 test.txt, the first part of each line is relative path of image, the second is it's xml file's path;\n"
+	  "			5 root folder, while using txt file, combine with line in test.txt to form full dir of images, do not end with '/'; while using image files, this is image folder\n"
+	  "			6 confidence threshold;\n"
+	  "			7 resize_width to show;\n"
+	  "         8 resize_height to show.\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   if (argc < 4) {
     gflags::ShowUsageWithFlagsRestrict(argv[0], "examples/ssd/ssd_detect");
     return 1;
   }
-
-  const string& model_file = argv[1];
-  const string& weights_file = argv[2];
-  const string& root_dir = argv[4];//��Ŀ¼��ַ����txt�е����·����ɾ���·��
+  int isTxtFile;
+  const string& model_file = argv[2];
+  const string& weights_file = argv[3];
+  const string& root_dir = argv[5];//在采用TXT文件时标志根目录地址，与txt中的相对路径组成绝对路径；在采用纯图片文件时表示图片文件地址
   const string& mean_file = FLAGS_mean_file;
   const string& mean_value = FLAGS_mean_value;
   const string& file_type = FLAGS_file_type;
   const string& out_file = FLAGS_out_file;
   //const string& conf= argv[5];
   float confidence_threshold;
-  str2float(confidence_threshold, argv[5]);
+  str2float(confidence_threshold, argv[6]);
   int resize_width;
   int resize_height;
-  str2int(resize_width, argv[6]);  // resize width
-  str2int(resize_height, argv[7]); //resize height
+  str2int(resize_width, argv[7]);  // resize width
+  str2int(resize_height, argv[8]); //resize height
+  str2int(isTxtFile, argv[1]); //0 for image files and 1 for txt file
 
   // Initialize the network.
   Detector detector(model_file, weights_file, mean_file, mean_value);
@@ -318,45 +366,98 @@ int main(int argc, char** argv) {
   std::ostream out(buf);
 
   // Process image one by one.
-  std::ifstream infile(argv[3]);
+  std::ifstream infile(argv[4]);
   std::string file,tempFile;
-  while (infile >> file>>tempFile) {
-    if (file_type == "image") {
-	  file = root_dir + '/' + file;
-      cv::Mat img = cv::imread(file.c_str(), -1);
-      CHECK(!img.empty()) << "Unable to decode image " << file;
-      std::vector<vector<float> > detections = detector.Detect(img);
 
-      /* Print the detection results. */
-      for (int i = 0; i < detections.size(); ++i) {
-        const vector<float>& d = detections[i];
-        // Detection format: [image_id, label, score, xmin, ymin, xmax, ymax].
-        CHECK_EQ(d.size(), 7);
-        const float score = d[2];
-        if (score >= confidence_threshold) {
-          out << file << " ";
-          out << static_cast<int>(d[1]) << " ";
-          out << score << " ";
-          out << static_cast<int>(d[3] * img.cols) << " ";  //xmin
-          out << static_cast<int>(d[4] * img.rows) << " ";  //ymin
-          out << static_cast<int>(d[5] * img.cols) << " ";  //xmax
-          out << static_cast<int>(d[6] * img.rows) << std::endl;  //ymax
+    if (file_type == "image") 
+	{
+		if (1 == isTxtFile) // 1 for txt file
+		{
+			while (infile >> file >> tempFile) // read txt file to get image folder
+			{
+				file = root_dir + '/' + file;
+				cv::Mat img = cv::imread(file.c_str(), -1);
+				CHECK(!img.empty()) << "Unable to decode image " << file;
+				std::vector<vector<float> > detections = detector.Detect(img);
 
-		  //���귽��
-		  cv::Point p0 = cv::Point(static_cast<int>(d[3] * img.cols), static_cast<int>(d[4] * img.rows)); //�󶥵�
-		  cv::Point p1 = cv::Point(static_cast<int>(d[5] * img.cols), static_cast<int>(d[6] * img.rows)); //���½ǵ�
-		  cv::rectangle(img, p0, p1, cv::Scalar(0, 255, 0), 2, 4);
-		  cv::putText(img, std::to_string(static_cast<int>(d[1]))+"_"+std::to_string(score), p0, cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0, 0, 255), 2);
+				/* Print the detection results. */
+				for (int i = 0; i < detections.size(); ++i) {
+				const vector<float>& d = detections[i];
+				// Detection format: [image_id, label, score, xmin, ymin, xmax, ymax].
+				CHECK_EQ(d.size(), 7);
+				const float score = d[2];
+				if (score >= confidence_threshold) {
+					out << file << " ";
+					out << static_cast<int>(d[1]) << " ";
+					out << score << " ";
+					out << static_cast<int>(d[3] * img.cols) << " ";  //xmin
+					out << static_cast<int>(d[4] * img.rows) << " ";  //ymin
+					out << static_cast<int>(d[5] * img.cols) << " ";  //xmax
+					out << static_cast<int>(d[6] * img.rows) << std::endl;  //ymax
 
-		  //
-        }
-      }
-	  //resize image to show
-	  cv::resize(img, img, cv::Size(resize_width, resize_height));
+					//坐标方框
+					cv::Point p0 = cv::Point(static_cast<int>(d[3] * img.cols), static_cast<int>(d[4] * img.rows)); //左顶点
+					cv::Point p1 = cv::Point(static_cast<int>(d[5] * img.cols), static_cast<int>(d[6] * img.rows)); //右下角点
+					cv::rectangle(img, p0, p1, cv::Scalar(0, 255, 0), 2, 4);
+					cv::putText(img, std::to_string(static_cast<int>(d[1]))+"_"+std::to_string(score), p0, cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0, 0, 255), 2);
 
-	  cv::imshow("image", img);
-	  cv::waitKey(0);
-    } else if (file_type == "video") {
+					//
+				}
+				}
+				//resize image to show
+				cv::resize(img, img, cv::Size(resize_width, resize_height));
+
+				cv::imshow("image", img);
+				cv::waitKey(0);
+			}
+		}
+		else if (0 == isTxtFile) // 0 for image files
+		{
+			// 1 get all image files in folder
+			std::vector<std::string> imgDirs;
+			getImgFiles(root_dir, imgDirs);
+			for (int idx = 0; idx < imgDirs.size(); idx++)
+			{
+				file = imgDirs[idx];
+				cv::Mat img = cv::imread(file.c_str(), -1);
+				CHECK(!img.empty()) << "Unable to decode image " << file;
+				std::vector<vector<float> > detections = detector.Detect(img);
+
+				/* Print the detection results. */
+				for (int i = 0; i < detections.size(); ++i) {
+					const vector<float>& d = detections[i];
+					// Detection format: [image_id, label, score, xmin, ymin, xmax, ymax].
+					CHECK_EQ(d.size(), 7);
+					const float score = d[2];
+					if (score >= confidence_threshold) {
+						out << file << " ";
+						out << static_cast<int>(d[1]) << " ";
+						out << score << " ";
+						out << static_cast<int>(d[3] * img.cols) << " ";  //xmin
+						out << static_cast<int>(d[4] * img.rows) << " ";  //ymin
+						out << static_cast<int>(d[5] * img.cols) << " ";  //xmax
+						out << static_cast<int>(d[6] * img.rows) << std::endl;  //ymax
+
+																				//坐标方框
+						cv::Point p0 = cv::Point(static_cast<int>(d[3] * img.cols), static_cast<int>(d[4] * img.rows)); //左顶点
+						cv::Point p1 = cv::Point(static_cast<int>(d[5] * img.cols), static_cast<int>(d[6] * img.rows)); //右下角点
+						cv::rectangle(img, p0, p1, cv::Scalar(0, 255, 0), 2, 4);
+						cv::putText(img, std::to_string(static_cast<int>(d[1])) + "_" + std::to_string(score), p0, cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0, 0, 255), 2);
+
+						//
+					}
+				}
+				//resize image to show
+				cv::resize(img, img, cv::Size(resize_width, resize_height));
+
+				cv::imshow("image", img);
+				cv::waitKey(0);
+			}
+		}
+    } 
+	
+	// for video
+	else if (file_type == "video") {
       cv::VideoCapture cap(file);
       if (!cap.isOpened()) {
         LOG(FATAL) << "Failed to open video: " << file;
@@ -397,8 +498,6 @@ int main(int argc, char** argv) {
     } else {
       LOG(FATAL) << "Unknown file_type: " << file_type;
     }
-
-  }
   return 0;
 }
 #else
